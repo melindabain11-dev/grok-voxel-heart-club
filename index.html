@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>♡ Heart & ♣ Club • Voxel Outlaw Town</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap');
+        
+        :root {
+            --sand: #d2b48c;
+            --dirt: #8B7355;
+            --dark: #2c2118;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        .voxel-grid {
+            image-rendering: pixelated;
+            box-shadow: inset 0 0 0 4px #5C4033,
+                        inset 0 4px 0 #a08060,
+                        inset 4px 0 0 #a08060;
+        }
+        
+        .cell {
+            transition: all 0.1s ease;
+            box-shadow: inset 0 0 0 1px #5C4033,
+                        inset 0 2px 0 #c9a87a,
+                        inset 2px 0 0 #c9a87a;
+            position: relative;
+        }
+        .cell:hover {
+            filter: brightness(1.1);
+            box-shadow: inset 0 0 0 1px #5C4033,
+                        inset 0 2px 0 #e8d4a8,
+                        inset 2px 0 0 #e8d4a8;
+        }
+        .cell.occupied {
+            background-color: #c9a87a !important;
+        }
+        
+        .character-token {
+            width: 52px;
+            height: 52px;
+            cursor: grab;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+            z-index: 10;
+            filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.4));
+        }
+        .character-token:active {
+            cursor: grabbing;
+            transform: scale(1.1) rotate(2deg);
+        }
+        .character-token:hover {
+            transform: scale(1.05);
+            z-index: 20;
+        }
+        
+        .token-ruby {
+            background: linear-gradient(#c2410f, #9f2a0a);
+            border: 3px solid #f87171;
+            box-shadow: 0 0 0 3px #7f1d1d, 3px 4px 0 #5C4033;
+        }
+        .token-ruby.full-plate {
+            background: linear-gradient(#e5e7eb, #9ca3af);
+            border-color: #facc15;
+            box-shadow: 0 0 0 3px #854d0e, 3px 4px 0 #5C4033;
+        }
+        
+        .token-jax {
+            background: linear-gradient(#374151, #1f2937);
+            border: 3px solid #4b5563;
+            box-shadow: 0 0 0 3px #111827, 3px 4px 0 #5C4033;
+        }
+        .token-jax.full-plate {
+            background: linear-gradient(#9ca3af, #6b7280);
+            border-color: #facc15;
+            box-shadow: 0 0 0 3px #1f2937, 3px 4px 0 #5C4033;
+        }
+        
+        .token-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-size: 10px;
+            color: white;
+            text-shadow: 1px 1px 0 #00000088;
+        }
+        
+        .token-hat {
+            position: absolute;
+            top: -6px;
+            width: 38px;
+            height: 14px;
+            background: #1f2937;
+            border: 2px solid #374151;
+            border-radius: 4px 4px 0 0;
+            box-shadow: 0 2px 0 #111827;
+        }
+        .token-ruby .token-hat {
+            background: #1f2937;
+            border-color: #f87171;
+        }
+        
+        .token-mask {
+            position: absolute;
+            top: 14px;
+            width: 22px;
+            height: 10px;
+            background: #111827;
+            border-radius: 2px;
+            box-shadow: 0 1px 0 #000;
+        }
+        
+        .token-symbol {
+            font-size: 22px;
+            line-height: 1;
+            margin-top: 8px;
+            filter: drop-shadow(0 1px 1px #00000066);
+        }
+        .token-ruby .token-symbol { color: #f87171; }
+        .token-jax .token-symbol { color: #9ca3af; }
+        
+        .token-cape {
+            position: absolute;
+            bottom: -2px;
+            width: 44px;
+            height: 18px;
+            background: linear-gradient(#1f2937, #111827);
+            border-radius: 0 0 8px 8px;
+            z-index: -1;
+        }
+        .token-ruby .token-cape {
+            background: linear-gradient(#7f1d1d, #450a0a);
+        }
+        
+        .tumbleweed {
+            position: absolute;
+            font-size: 28px;
+            animation: tumble 1.8s linear forwards;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        @keyframes tumble {
+            0% { transform: translateX(-60px) rotate(0deg); }
+            100% { transform: translateX(520px) rotate(720deg); }
+        }
+        
+        .chat-bubble {
+            max-width: 75%;
+            padding: 8px 14px;
+            border-radius: 18px;
+            margin-bottom: 6px;
+            position: relative;
+        }
+        .chat-user {
+            background: #78350f;
+            color: #fed7aa;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-ruby {
+            background: #7f1d1d;
+            color: #fecaca;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-jax {
+            background: #1f2937;
+            color: #e5e7eb;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .western-title {
+            font-family: 'Press Start 2P', system-ui;
+            letter-spacing: 1px;
+        }
+        
+        .stat-bar {
+            height: 6px;
+            background: #451a03;
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .stat-fill {
+            height: 100%;
+            transition: width 0.4s cubic-bezier(0.34,1.56,0.64,1);
+        }
+    </style>
+</head>
+<body class="bg-[#2c2118] text-[#f5e8c7] min-h-screen">
+    <!-- Header -->
+    <div class="border-b border-[#5C4033] bg-[#1f1812]">
+        <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-x-4">
+                <div class="flex items-center gap-x-2">
+                    <span class="text-5xl">♡</span>
+                    <span class="text-5xl text-[#9ca3af]">♣</span>
+                </div>
+                <div>
+                    <h1 class="western-title text-4xl font-bold tracking-wider text-[#f5e8c7]">HEART &amp; CLUB</h1>
+                    <p class="text-[#d2b48c] text-sm -mt-1">Voxel Outlaw Town • Wild West Sim</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-x-3 text-sm">
+                <div class="px-4 py-1.5 bg-[#3a2f1f] border border-[#5C4033] rounded-full flex items-center gap-x-2">
+                    <i class="fa-solid fa-globe text-[#d2b48c]"></i>
+                    <span class="font-mono text-xs">v0.8 — CSS Voxel</span>
+                </div>
+                <div onclick="window.location.reload()" class="cursor-pointer px-3 py-1.5 hover:bg-[#3a2f1f] border border-[#5C4033] rounded-full text-xs flex items-center gap-x-1.5">
+                    <i class="fa-solid fa-sync"></i>
+                    <span>Reset Town</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- TOWN SQUARE -->
+            <div class="lg:col-span-7">
+                <div class="flex items-end justify-between mb-3 px-1">
+                    <div>
+                        <h2 class="text-2xl font-bold flex items-center gap-x-2">
+                            <i class="fa-solid fa-map text-[#d2b48c]"></i> 
+                            <span>Town Square</span>
+                        </h2>
+                        <p class="text-[#d2b48c] text-sm">Drag the outlaws around the voxel grid</p>
+                    </div>
+                    <div class="text-xs px-3 py-1 bg-[#3a2f1f] border border-[#5C4033] rounded-full">
+                        8 × 8 Block Grid
+                    </div>
+                </div>
+                
+                <!-- Voxel Grid -->
+                <div id="town-grid" 
+                     class="voxel-grid grid grid-cols-8 gap-[3px] bg-[#8B7355] p-3 border-[6px] border-[#5C4033] rounded-2xl shadow-2xl mx-auto"
+                     style="max-width: 620px; aspect-ratio: 1 / 1;">
+                    <!-- Populated by JS -->
+                </div>
+                
+                <div class="mt-3 flex justify-center gap-x-4 text-xs text-[#d2b48c]">
+                    <div class="flex items-center gap-x-1.5"><i class="fa-solid fa-arrows-alt text-[#f87171]"></i> <span>Drag tokens</span></div>
+                    <div class="flex items-center gap-x-1.5"><i class="fa-solid fa-sync text-[#9ca3af]"></i> <span>Drop on any cell</span></div>
+                </div>
+            </div>
+
+            <!-- SIDEBAR: CHARACTERS + EVENTS -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <!-- Ruby Card -->
+                <div class="bg-[#3a2f1f] border border-[#7f1d1d] rounded-3xl p-5 shadow-xl">
+                    <div class="flex gap-4">
+                        <!-- Token preview -->
+                        <div id="preview-ruby" 
+                             class="character-token token-ruby w-14 h-14 flex-shrink-0 rounded-2xl overflow-hidden border-[3px] border-[#f87171] cursor-pointer"
+                             onclick="interactWith('ruby')">
+                            <div class="token-inner">
+                                <div class="token-hat"></div>
+                                <div class="token-mask"></div>
+                                <div class="token-symbol">♡</div>
+                                <div class="token-cape"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="font-bold text-[#fecaca] text-lg">Ruby Voss</div>
+                                    <div class="text-[#f87171] text-xs tracking-wider">QUEEN OF HEARTS ♡</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xs text-[#d2b48c]">MOOD</div>
+                                    <div id="ruby-mood" class="text-2xl leading-none">😊</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                    <div class="text-[#d2b48c] text-[10px]">GOLD</div>
+                                    <div class="font-mono text-[#fed7aa] text-lg font-bold" id="ruby-gold">245</div>
+                                </div>
+                                <div>
+                                    <div class="text-[#d2b48c] text-[10px]">ARMOR</div>
+                                    <div class="font-bold text-[#fecaca]" id="ruby-armor">Leather</div>
+                                </div>
+                                <div>
+                                    <div class="text-[#d2b48c] text-[10px]">BOND</div>
+                                    <div class="flex items-center gap-1">
+                                        <div class="flex-1 h-1.5 bg-[#451a03] rounded-full overflow-hidden">
+                                            <div id="bond-bar" class="stat-fill bg-gradient-to-r from-[#f87171] to-[#fecaca]" style="width: 65%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button onclick="upgradeArmor('ruby')" 
+                                    class="mt-3 w-full py-1.5 text-xs font-bold bg-[#7f1d1d] hover:bg-[#9f2a0a] active:bg-[#450a0a] transition-colors rounded-2xl flex items-center justify-center gap-x-2">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span>UPGRADE ARMOR</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jax Card -->
+                <div class="bg-[#3a2f1f] border border-[#374151] rounded-3xl p-5 shadow-xl">
+                    <div class="flex gap-4">
+                        <div id="preview-jax" 
+                             class="character-token token-jax w-14 h-14 flex-shrink-0 rounded-2xl overflow-hidden border-[3px] border-[#4b5563] cursor-pointer"
+                             onclick="interactWith('jax')">
+                            <div class="token-inner">
+                                <div class="token-hat"></div>
+                                <div class="token-mask"></div>
+                                <div class="token-symbol">♣</div>
+                                <div class="token-cape"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="font-bold text-[#e5e7eb] text-lg">Jax Harlan</div>
+                                    <div class="text-[#9ca3af] text-xs tracking-wider">BLACK CLUB ♣</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-xs text-[#d2b48c]">MOOD</div>
+                                    <div id="jax-mood" class="text-2xl leading-none">😐</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                    <div class="text-[#d2b48c] text-[10px]">GOLD</div>
+                                    <div class="font-mono text-[#fed7aa] text-lg font-bold" id="jax-gold">180</div>
+                                </div>
+                                <div>
+                                    <div class="text-[#d2b48c] text-[10px]">ARMOR</div>
+                                    <div class="font-bold text-[#e5e7eb]" id="jax-armor">Leather</div>
+                                </div>
+                                <div class="text-[#d2b48c] text-[10px]">
+                                    <span class="font-bold">RELATIONSHIP</span>
+                                </div>
+                            </div>
+                            
+                            <button onclick="upgradeArmor('jax')" 
+                                    class="mt-3 w-full py-1.5 text-xs font-bold bg-[#374151] hover:bg-[#4b5563] active:bg-[#1f2937] transition-colors rounded-2xl flex items-center justify-center gap-x-2">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span>UPGRADE ARMOR</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Random Events -->
+                <div class="bg-[#3a2f1f] border border-[#5C4033] rounded-3xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="font-bold flex items-center gap-x-2">
+                            <i class="fa-solid fa-dice text-[#d2b48c]"></i>
+                            <span>Random Events</span>
+                        </div>
+                        <button onclick="triggerRandomEvent()" 
+                                class="px-5 py-2 bg-gradient-to-r from-[#d2b48c] to-[#c9a87a] text-[#2c2118] text-xs font-extrabold rounded-3xl flex items-center gap-x-2 active:scale-[0.985] transition-transform">
+                            <i class="fa-solid fa-sync"></i>
+                            <span>TRIGGER</span>
+                        </button>
+                    </div>
+                    
+                    <div id="event-log" class="h-[138px] overflow-y-auto text-xs space-y-1.5 pr-1 custom-scroll">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAT PANEL -->
+            <div class="lg:col-span-12 mt-2">
+                <div class="bg-[#1f1812] border border-[#5C4033] rounded-3xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h3 class="font-bold text-lg flex items-center gap-x-2">
+                                <i class="fa-solid fa-comments text-[#d2b48c]"></i>
+                                <span>Chat with the Outlaws</span>
+                            </h3>
+                            <p class="text-xs text-[#d2b48c]">Type @ruby or @jax to speak to one of them directly</p>
+                        </div>
+                        <div class="text-xs px-3 py-1 bg-[#2c2118] border border-[#5C4033] rounded-full">In-Character AI (lite)</div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <input id="chat-input" type="text" 
+                               class="flex-1 bg-[#2c2118] border border-[#5C4033] focus:border-[#d2b48c] rounded-3xl px-5 py-3 text-sm placeholder-[#8B7355] outline-none"
+                               placeholder="Tell Ruby you like her new armor... or ask Jax about the bounty on your heads">
+                        <button onclick="sendChat()" 
+                                class="px-8 bg-[#7f1d1d] hover:bg-[#9f2a0a] active:bg-[#450a0a] transition-all text-white font-bold rounded-3xl flex items-center justify-center gap-x-2">
+                            <span>SEND</span>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="chat-log" class="mt-4 h-[170px] overflow-y-auto bg-[#2c2118] border border-[#5C4033] rounded-2xl p-4 text-sm space-y-3 custom-scroll">
+                        <!-- Messages added by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-6 text-xs text-[#8B7355]">
+        Made with ♡ for you • grok-voxel-heart-club • Future: Canvas voxel town coming soon
+    </footer>
+
+    <script>
+        // Tailwind script
+        function initTailwind() {
+            document.documentElement.style.setProperty('--accent', '#d2b48c');
+        }
+
+        // Game State
+        let state = {
+            ruby: { gold: 245, mood: 85, armorLevel: 1, row: 1, col: 2 },
+            jax: { gold: 180, mood: 65, armorLevel: 1, row: 4, col: 5 },
+            relationship: 65,
+            lastEvent: null
+        };
+
+        let gridCells = [];
+
+        // In-character responses
+        const rubyResponses = [
+            "Darling, you always know how to make a girl's heart skip a beat ♡",
+            "Mmm, I like where this is going. Let's show them what real cards look like.",
+            "You're trouble... and I like trouble. What's the play?",
+            "That new armor looks even better when you're the one complimenting it.",
+            "Careful now, keep talking like that and I might just steal your heart for real.",
+            "The desert's hot, but you? You're making it feel like a cool breeze tonight.",
+            "Hearts never fold easy. I'm with you till the last chip."
+        ];
+
+        const jaxResponses = [
+            "Club's the suit for this job. I'm in — no questions asked.",
+            "That could get messy. But messy is where we shine.",
+            "You point, I shoot. Or play the card. Your call.",
+            "Don't get soft on me now. We got a town to keep honest.",
+            "Hearts and clubs... we make a dangerous pair. I got your back.",
+            "Bounty hunters are circling. Good. I was getting bored.",
+            "Smart move. The club always beats the house in the end."
+        ];
+
+        // Random events
+        const events = [
+            {
+                text: "🌵 A lone tumbleweed rolls lazily across the square...",
+                effect: () => { showTumbleweed(); }
+            },
+            {
+                text: "💰 A mysterious stranger in a duster drops a heavy pouch and vanishes into the dust!",
+                effect: () => { 
+                    state.ruby.gold += 65; 
+                    state.jax.gold += 40; 
+                    updateUI(); 
+                    appendEvent("Both outlaws gained gold!");
+                }
+            },
+            {
+                text: "🌧️ Sudden desert rain! The air smells like creosote and new beginnings.",
+                effect: () => { 
+                    state.ruby.mood = Math.min(100, state.ruby.mood + 18);
+                    state.jax.mood = Math.min(100, state.jax.mood + 12);
+                    updateUI();
+                    appendEvent("Moods improved from the rain.");
+                }
+            },
+            {
+                text: "🃏 The local card sharp eyes you two. "Care for a friendly game?" he drawls.",
+                effect: () => { 
+                    if (Math.random() > 0.45) {
+                        state.ruby.gold += 90;
+                        state.jax.gold += 55;
+                        appendChatMessage("Jax", "Told you the club always wins.", "jax");
+                    } else {
+                        state.ruby.gold = Math.max(10, state.ruby.gold - 35);
+                        state.jax.gold = Math.max(10, state.jax.gold - 25);
+                        appendChatMessage("Ruby", "Well... we can't win 'em all, darling.", "ruby");
+                    }
+                    updateUI();
+                }
+            },
+            {
+                text: "🐺 Coyotes howl in the distance. The town feels a little more alive... and dangerous.",
+                effect: () => { 
+                    state.relationship = Math.max(30, state.relationship - 8);
+                    updateUI();
+                    appendEvent("The duo's bond feels tested by the wild night.");
+                }
+            },
+            {
+                text: "✨ A shooting star streaks across the twilight sky. Make a wish?",
+                effect: () => { 
+                    state.relationship = Math.min(100, state.relationship + 15);
+                    state.ruby.mood = Math.min(100, state.ruby.mood + 10);
+                    updateUI();
+                    appendChatMessage("Ruby", "I wished for more nights like this... with you.", "ruby");
+                }
+            },
+            {
+                text: "💸 Word spreads that you two pulled off the big heist. The town is buzzing.",
+                effect: () => { 
+                    state.ruby.gold += 120;
+                    state.jax.gold += 95;
+                    state.relationship += 12;
+                    updateUI();
+                }
+            }
+        ];
+
+        function updateUI() {
+            // Ruby
+            document.getElementById('ruby-gold').textContent = state.ruby.gold;
+            document.getElementById('ruby-mood').textContent = getMoodEmoji(state.ruby.mood);
+            document.getElementById('ruby-armor').textContent = getArmorName(state.ruby.armorLevel);
+            
+            // Jax
+            document.getElementById('jax-gold').textContent = state.jax.gold;
+            document.getElementById('jax-mood').textContent = getMoodEmoji(state.jax.mood);
+            document.getElementById('jax-armor').textContent = getArmorName(state.jax.armorLevel);
+            
+            // Bond bar
+            const bondPercent = state.relationship;
+            document.getElementById('bond-bar').style.width = bondPercent + '%';
+            
+            // Update token styles for armor
+            updateTokenStyles();
+        }
+
+        function getMoodEmoji(mood) {
+            if (mood > 85) return '😊';
+            if (mood > 65) return '🙂';
+            if (mood > 45) return '😐';
+            if (mood > 25) return '😕';
+            return '😞';
+        }
+
+        function getArmorName(level) {
+            if (level === 1) return 'Leather';
+            if (level === 2) return 'Reinforced';
+            return 'Full Plate';
+        }
+
+        function updateTokenStyles() {
+            const rubyToken = document.getElementById('token-ruby');
+            const jaxToken = document.getElementById('token-jax');
+            
+            if (rubyToken) {
+                rubyToken.classList.toggle('full-plate', state.ruby.armorLevel === 3);
+                if (state.ruby.armorLevel === 2) rubyToken.style.borderColor = '#fb923c';
+                else if (state.ruby.armorLevel === 3) rubyToken.style.borderColor = '#facc15';
+                else rubyToken.style.borderColor = '#f87171';
+            }
+            if (jaxToken) {
+                jaxToken.classList.toggle('full-plate', state.jax.armorLevel === 3);
+                if (state.jax.armorLevel === 2) jaxToken.style.borderColor = '#9ca3af';
+                else if (state.jax.armorLevel === 3) jaxToken.style.borderColor = '#facc15';
+                else jaxToken.style.borderColor = '#4b5563';
+            }
+        }
+
+        function createGrid() {
+            const grid = document.getElementById('town-grid');
+            grid.innerHTML = '';
+            gridCells = [];
+            
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell aspect-square bg-[#d2b48c] flex items-center justify-center text-[10px] border border-[#a08060] rounded-sm overflow-hidden';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    
+                    // Static voxel props
+                    if (r === 0 && c === 3) {
+                        cell.innerHTML = `<div class="text-center pointer-events-none"><div class="text-xl">🏛️</div><div class="text-[8px] text-black/60 font-bold">SALOON</div></div>`;
+                        cell.style.background = '#a0522d';
+                    } else if (r === 0 && c === 6) {
+                        cell.innerHTML = `<div class="text-center pointer-events-none"><div class="text-xl">🏦</div><div class="text-[8px] text-black/60">BANK</div></div>`;
+                        cell.style.background = '#78716c';
+                    } else if (r === 7 && c === 1) {
+                        cell.innerHTML = `<div class="text-center pointer-events-none"><div class="text-2xl">🌵</div></div>`;
+                    } else if (r === 7 && c === 6) {
+                        cell.innerHTML = `<div class="text-center pointer-events-none"><div class="text-xl">🏜️</div><div class="text-[8px] text-black/60">OUTSKIRTS</div></div>`;
+                    } else if (r === 3 && c === 3) {
+                        cell.innerHTML = `<div class="text-center pointer-events-none"><div class="text-xl">🪵</div><div class="text-[8px] text-black/60">STOCKS</div></div>`;
+                        cell.style.background = '#854d0e';
+                    }
+                    
+                    // Drag & drop handlers
+                    cell.ondragover = (e) => e.preventDefault();
+                    cell.ondrop = (e) => handleDrop(e, cell);
+                    
+                    grid.appendChild(cell);
+                    gridCells.push(cell);
+                }
+            }
+            
+            // Place initial tokens
+            setTimeout(() => {
+                const rubyToken = createToken('ruby');
+                const jaxToken = createToken('jax');
+                
+                // Place Ruby at (1,2)
+                const rubyCell = gridCells[1 * 8 + 2];
+                rubyCell.appendChild(rubyToken);
+                rubyCell.classList.add('occupied');
+                
+                // Place Jax at (4,5)
+                const jaxCell = gridCells[4 * 8 + 5];
+                jaxCell.appendChild(jaxToken);
+                jaxCell.classList.add('occupied');
+                
+                // Store references
+                window.rubyTokenEl = rubyToken;
+                window.jaxTokenEl = jaxToken;
+                
+                updateTokenStyles();
+            }, 50);
+        }
+
+        function createToken(char) {
+            const token = document.createElement('div');
+            token.id = `token-${char}`;
+            token.className = `character-token rounded-2xl flex-shrink-0 ${char === 'ruby' ? 'token-ruby' : 'token-jax'}`;
+            token.draggable = true;
+            token.dataset.char = char;
+            
+            token.innerHTML = `
+                <div class="token-inner">
+                    <div class="token-hat"></div>
+                    <div class="token-mask"></div>
+                    <div class="token-symbol">${char === 'ruby' ? '♡' : '♣'}</div>
+                    <div class="token-cape"></div>
+                </div>
+            `;
+            
+            // Drag handlers
+            token.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', token.id);
+            };
+            
+            // Click to interact
+            token.onclick = (e) => {
+                e.stopImmediatePropagation();
+                interactWith(char);
+            };
+            
+            return token;
+        }
+
+        function handleDrop(e, cell) {
+            e.preventDefault();
+            const tokenId = e.dataTransfer.getData('text/plain');
+            const token = document.getElementById(tokenId);
+            if (!token) return;
+            
+            // Remove from old cell
+            const oldCell = token.parentNode;
+            if (oldCell && oldCell.classList.contains('cell')) {
+                oldCell.classList.remove('occupied');
+            }
+            
+            // Move to new cell
+            cell.appendChild(token);
+            cell.classList.add('occupied');
+            
+            // Update state position
+            const char = token.dataset.char;
+            const newRow = parseInt(cell.dataset.row);
+            const newCol = parseInt(cell.dataset.col);
+            
+            state[char].row = newRow;
+            state[char].col = newCol;
+            
+            // Fun interaction if moved to Saloon
+            if (newRow === 0 && newCol === 3) {
+                setTimeout(() => {
+                    appendChatMessage(char === 'ruby' ? 'Ruby' : 'Jax', 
+                        char === 'ruby' ? "Mmm, the Saloon always feels like home... care for a dance?" : "Saloon's got good whiskey and better cards. You in?", 
+                        char);
+                }, 400);
+            }
+            
+            // Small chance of random comment on move
+            if (Math.random() < 0.25) {
+                setTimeout(() => {
+                    const responses = char === 'ruby' ? rubyResponses : jaxResponses;
+                    appendChatMessage(char === 'ruby' ? 'Ruby' : 'Jax', responses[Math.floor(Math.random() * responses.length)], char);
+                }, 650);
+            }
+        }
+
+        function upgradeArmor(char) {
+            const s = state[char];
+            s.armorLevel = s.armorLevel === 3 ? 1 : s.armorLevel + 1;
+            
+            const cost = s.armorLevel === 2 ? 45 : (s.armorLevel === 3 ? 120 : 0);
+            if (cost > 0) {
+                s.gold = Math.max(5, s.gold - cost);
+                appendEvent(`${char === 'ruby' ? 'Ruby' : 'Jax'} upgraded to ${getArmorName(s.armorLevel)} (cost ${cost} gold)`);
+            }
+            
+            updateUI();
+            
+            // Visual feedback
+            const token = document.getElementById(`token-${char}`);
+            if (token) {
+                token.style.transition = 'transform 0.3s, box-shadow 0.3s';
+                token.style.transform = 'scale(1.3)';
+                setTimeout(() => {
+                    token.style.transform = 'scale(1)';
+                }, 280);
+            }
+            
+            // Special chat on full plate
+            if (s.armorLevel === 3) {
+                setTimeout(() => {
+                    if (char === 'ruby') {
+                        appendChatMessage('Ruby', "This full plate feels powerful... and a little dangerous. I like it.", 'ruby');
+                    } else {
+                        appendChatMessage('Jax', "Full plate. Now we're talking serious business.", 'jax');
+                    }
+                }, 420);
+            }
+        }
+
+        function interactWith(char) {
+            const name = char === 'ruby' ? 'Ruby' : 'Jax';
+            const responses = char === 'ruby' ? rubyResponses : jaxResponses;
+            const reply = responses[Math.floor(Math.random() * responses.length)];
+            
+            appendChatMessage(name, reply, char);
+            
+            // Small mood boost from attention
+            state[char].mood = Math.min(100, state[char].mood + 6);
+            updateUI();
+        }
+
+        function showTumbleweed() {
+            const grid = document.getElementById('town-grid');
+            const weed = document.createElement('div');
+            weed.className = 'tumbleweed';
+            weed.textContent = '🌵';
+            weed.style.left = '-30px';
+            weed.style.top = (Math.random() * 180 + 80) + 'px';
+            grid.appendChild(weed);
+            
+            setTimeout(() => {
+                weed.remove();
+            }, 2000);
+        }
+
+        function triggerRandomEvent() {
+            const event = events[Math.floor(Math.random() * events.length)];
+            appendEvent(event.text);
+            event.effect();
+            
+            // Occasionally both comment
+            if (Math.random() < 0.35) {
+                setTimeout(() => {
+                    appendChatMessage('Ruby', rubyResponses[Math.floor(Math.random() * rubyResponses.length)], 'ruby');
+                    setTimeout(() => {
+                        appendChatMessage('Jax', jaxResponses[Math.floor(Math.random() * jaxResponses.length)], 'jax');
+                    }, 650);
+                }, 380);
+            }
+        }
+
+        function appendEvent(text) {
+            const log = document.getElementById('event-log');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 text-[#d2b48c] bg-[#2c2118]/60 px-2.5 py-1.5 rounded-2xl text-xs';
+            div.innerHTML = `
+                <span class="text-[#8B7355] mt-0.5">•</span> 
+                <span>${text}</span>
+            `;
+            log.prepend(div);
+            
+            // Limit log size
+            while (log.children.length > 9) log.removeChild(log.lastChild);
+        }
+
+        function appendChatMessage(speaker, text, type) {
+            const log = document.getElementById('chat-log');
+            const div = document.createElement('div');
+            
+            let bubbleClass = 'chat-bubble ';
+            if (type === 'user') bubbleClass += 'chat-user';
+            else if (type === 'ruby') bubbleClass += 'chat-ruby';
+            else bubbleClass += 'chat-jax';
+            
+            const icon = type === 'ruby' ? '♡ ' : (type === 'jax' ? '♣ ' : '');
+            
+            div.className = bubbleClass;
+            div.innerHTML = `<span class="font-semibold text-xs opacity-75">${icon}${speaker}</span><br>${text}`;
+            
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+            
+            // Occasionally affect relationship from chat
+            if (type !== 'user' && Math.random() < 0.3) {
+                state.relationship = Math.min(100, state.relationship + 3);
+                updateUI();
+            }
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            const val = input.value.trim();
+            if (!val) return;
+            
+            appendChatMessage('You', val, 'user');
+            
+            const lower = val.toLowerCase();
+            let target = null;
+            
+            if (lower.includes('@ruby') || lower.includes('ruby') || lower.includes('heart') || lower.includes('♡')) {
+                target = 'ruby';
+            } else if (lower.includes('@jax') || lower.includes('jax') || lower.includes('club') || lower.includes('♣')) {
+                target = 'jax';
+            }
+            
+            input.value = '';
+            
+            setTimeout(() => {
+                if (target === 'ruby' || target === null) {
+                    const reply = rubyResponses[Math.floor(Math.random() * rubyResponses.length)];
+                    appendChatMessage('Ruby', reply, 'ruby');
+                }
+                if (target === 'jax' || target === null) {
+                    setTimeout(() => {
+                        const reply = jaxResponses[Math.floor(Math.random() * jaxResponses.length)];
+                        appendChatMessage('Jax', reply, 'jax');
+                    }, target === null ? 420 : 180);
+                }
+                
+                // Relationship boost for kind/flirty language
+                if (lower.includes('love') || lower.includes('beautiful') || lower.includes('darling') || lower.includes('sweet') || lower.includes('♡')) {
+                    state.relationship = Math.min(100, state.relationship + 8);
+                    updateUI();
+                }
+            }, 520);
+        }
+
+        function initEventLog() {
+            const log = document.getElementById('event-log');
+            const starter = document.createElement('div');
+            starter.className = 'text-[#8B7355] text-xs px-2';
+            starter.innerHTML = `The sun is setting over the voxel desert. Ruby &amp; Jax are ready for trouble.`;
+            log.appendChild(starter);
+        }
+
+        function initChat() {
+            const log = document.getElementById('chat-log');
+            // Welcome messages
+            setTimeout(() => {
+                appendChatMessage('Ruby', "Well hello there, stranger. You look like you could use a little excitement tonight.", 'ruby');
+            }, 800);
+            setTimeout(() => {
+                appendChatMessage('Jax', "Don't mind her. She's always like this when new blood shows up. What's your play?", 'jax');
+            }, 1650);
+        }
+
+        function initKeyboard() {
+            document.getElementById('chat-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChat();
+                }
+            });
+            
+            // Bonus: press "e" to trigger event
+            document.addEventListener('keydown', function(e) {
+                if (e.key.toLowerCase() === 'e' && document.activeElement.tagName === 'BODY') {
+                    triggerRandomEvent();
+                }
+            });
+        }
+
+        // Boot everything
+        function bootGame() {
+            initTailwind();
+            createGrid();
+            initEventLog();
+            initChat();
+            initKeyboard();
+            updateUI();
+            
+            // Easter egg: click title for surprise event
+            const title = document.querySelector('.western-title');
+            if (title) {
+                title.style.cursor = 'pointer';
+                title.onclick = () => {
+                    appendEvent("The wind shifts... something exciting is about to happen.");
+                    triggerRandomEvent();
+                };
+            }
+            
+            // Keyboard hint
+            console.log('%c[Heart & Club] Press E anywhere (when not typing) to trigger a random event', 'color:#8B7355');
+        }
+
+        window.onload = bootGame;
+    </script>
+</body>
+</html>

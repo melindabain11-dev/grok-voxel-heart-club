@@ -214,7 +214,7 @@
             <div class="flex items-center gap-x-3 text-sm">
                 <div class="px-4 py-1.5 bg-[#3a2f1f] border border-[#5C4033] rounded-full flex items-center gap-x-2">
                     <i class="fa-solid fa-globe text-[#d2b48c]"></i>
-                    <span class="font-mono text-xs">v0.92 — Step 1: Saloon Detection ♠️</span>
+                    <span class="font-mono text-xs">v0.93 — Step 2: Saloon Card Button ♠️</span>
                 </div>
                 <div onclick="window.location.reload()" class="cursor-pointer px-3 py-1.5 hover:bg-[#3a2f1f] border border-[#5C4033] rounded-full text-xs flex items-center gap-x-1.5">
                     <i class="fa-solid fa-sync"></i>
@@ -379,6 +379,14 @@
                     <div id="event-log" class="h-[138px] overflow-y-auto text-xs space-y-1.5 pr-1 custom-scroll">
                         <!-- Populated by JS -->
                     </div>
+
+                    <!-- NEW Step 2: Saloon Card Game Button -->
+                    <button id="saloon-play-btn"
+                            onclick="playSimpleSaloonCards()"
+                            class="hidden mt-4 w-full py-2.5 text-sm font-bold bg-[#d2b48c] hover:bg-[#c9a87a] active:bg-[#a08060] text-[#2c2118] rounded-3xl flex items-center justify-center gap-x-2 transition-all shadow-lg">
+                        <i class="fa-solid fa-dice fa-lg"></i>
+                        <span>♠️ Play Cards at the Saloon</span>
+                    </button>
                 </div>
             </div>
 
@@ -416,7 +424,7 @@
     </div>
 
     <footer class="text-center py-6 text-xs text-[#8B7355]">
-        Made with ♡ for you • grok-voxel-heart-club v0.92 • Step 1 of Saloon Card Game: Detecting when both outlaws arrive ♠️
+        Made with ♡ for you • grok-voxel-heart-club v0.93 • Step 2: Button appears when both outlaws are at the Saloon + simple card game
     </footer>
 
     <script>
@@ -433,7 +441,7 @@
             lastEvent: null
         };
 
-        const SAVE_KEY = 'grokVoxelHeartClub_v0.92';
+        const SAVE_KEY = 'grokVoxelHeartClub_v0.93';
 
         function loadState() {
             try {
@@ -460,12 +468,24 @@
             } catch (e) {}
         }
 
-        // NEW Step 1: Helper to check if both characters are at the Saloon (row 0, col 3)
+        // Helper to check if both characters are at the Saloon (row 0, col 3)
         function areBothAtSaloon() {
             return (
                 state.ruby.row === 0 && state.ruby.col === 3 &&
                 state.jax.row === 0 && state.jax.col === 3
             );
+        }
+
+        // NEW Step 2: Show or hide the Saloon card game button
+        function updateSaloonButton() {
+            const btn = document.getElementById('saloon-play-btn');
+            if (!btn) return;
+
+            if (areBothAtSaloon()) {
+                btn.classList.remove('hidden');
+            } else {
+                btn.classList.add('hidden');
+            }
         }
 
         let gridCells = [];
@@ -676,6 +696,7 @@
                 window.jaxTokenEl = jaxToken;
                 
                 updateTokenStyles();
+                updateSaloonButton(); // NEW: check button state after initial placement
             }, 50);
         }
 
@@ -755,12 +776,14 @@
             // Check if close to the other outlaw for special moment
             checkProximity();
 
-            // NEW Step 1 test: If both are now at the Saloon, show a message
+            // If both are now at the Saloon, show message + update button
             if (areBothAtSaloon()) {
                 setTimeout(() => {
                     appendEvent("♠️ Both Ruby and Jax have arrived at the Saloon... the cards are calling.");
                 }, 450);
             }
+
+            updateSaloonButton(); // NEW Step 2: refresh button visibility after every move
         }
 
         function checkProximity() {
@@ -830,6 +853,57 @@
             state[char].mood = Math.min(100, state[char].mood + 6);
             updateUI();
             saveState();
+        }
+
+        // NEW Step 2: Simple Saloon card game
+        function playSimpleSaloonCards() {
+            if (!areBothAtSaloon()) return;
+
+            // Simple high-card: ranks 2-14 (Ace high)
+            const rubyRank = Math.floor(Math.random() * 13) + 2;
+            const jaxRank = Math.floor(Math.random() * 13) + 2;
+
+            let winner = '';
+            let winnerName = '';
+            let winAmount = 55;
+
+            if (rubyRank > jaxRank) {
+                winner = 'ruby';
+                winnerName = 'Ruby';
+                state.ruby.gold += winAmount;
+            } else if (jaxRank > rubyRank) {
+                winner = 'jax';
+                winnerName = 'Jax';
+                state.jax.gold += winAmount;
+            } else {
+                // Tie
+                appendEvent("The cards tied! The pot stays on the table this round.");
+                appendChatMessage('Ruby', "A tie? How boring... care to try again, darling?", 'ruby');
+                updateUI();
+                saveState();
+                return;
+            }
+
+            updateUI();
+            saveState();
+
+            appendEvent(`${winnerName} wins the hand! +${winAmount} gold`);
+
+            const winMessages = {
+                ruby: [
+                    "Hearts always win in the end, sweetheart ♡",
+                    "Mmm, I do love taking the pot when you're watching.",
+                    "Looks like the Queen takes the night."
+                ],
+                jax: [
+                    "Club takes what it wants. Simple as that.",
+                    "Told you the black suit cleans up nice.",
+                    "Another win for the Club. You in for the next round?"
+                ]
+            };
+
+            const msg = winMessages[winner][Math.floor(Math.random() * winMessages[winner].length)];
+            appendChatMessage(winnerName, msg, winner);
         }
 
         function showTumbleweed() {
@@ -984,6 +1058,7 @@
             initChat();
             initKeyboard();
             updateUI();
+            updateSaloonButton(); // NEW: make sure button state is correct on load
             
             // Easter egg: click title for surprise event
             const title = document.querySelector('.western-title');

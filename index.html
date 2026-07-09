@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         
         :root {
             --sand: #d2b48c;
@@ -206,7 +206,7 @@
                     <span class="text-5xl text-[#9ca3af]">♣</span>
                 </div>
                 <div>
-                    <h1 class="western-title text-4xl font-bold tracking-wider text-[#f5e8c7]">HEART &amp; CLUB</h1>
+                    <h1 class="western-title text-4xl font-bold tracking-wider text-[#f5e8c7]">HEART & CLUB</h1>
                     <p class="text-[#d2b48c] text-sm -mt-1">Voxel Outlaw Town • Wild West Sim</p>
                 </div>
             </div>
@@ -214,7 +214,7 @@
             <div class="flex items-center gap-x-3 text-sm">
                 <div class="px-4 py-1.5 bg-[#3a2f1f] border border-[#5C4033] rounded-full flex items-center gap-x-2">
                     <i class="fa-solid fa-globe text-[#d2b48c]"></i>
-                    <span class="font-mono text-xs">v0.8 — CSS Voxel</span>
+                    <span class="font-mono text-xs">v0.9 — Persistent CSS Voxel</span>
                 </div>
                 <div onclick="window.location.reload()" class="cursor-pointer px-3 py-1.5 hover:bg-[#3a2f1f] border border-[#5C4033] rounded-full text-xs flex items-center gap-x-1.5">
                     <i class="fa-solid fa-sync"></i>
@@ -235,7 +235,7 @@
                             <i class="fa-solid fa-map text-[#d2b48c]"></i> 
                             <span>Town Square</span>
                         </h2>
-                        <p class="text-[#d2b48c] text-sm">Drag the outlaws around the voxel grid</p>
+                        <p class="text-[#d2b48c] text-sm">Drag the outlaws around the voxel grid • They remember where you left them</p>
                     </div>
                     <div class="text-xs px-3 py-1 bg-[#3a2f1f] border border-[#5C4033] rounded-full">
                         8 × 8 Block Grid
@@ -290,7 +290,7 @@
                                     <div class="text-[#d2b48c] text-[10px]">GOLD</div>
                                     <div class="font-mono text-[#fed7aa] text-lg font-bold" id="ruby-gold">245</div>
                                 </div>
-                                <div>
+                                    <div>
                                     <div class="text-[#d2b48c] text-[10px]">ARMOR</div>
                                     <div class="font-bold text-[#fecaca]" id="ruby-armor">Leather</div>
                                 </div>
@@ -391,7 +391,7 @@
                                 <i class="fa-solid fa-comments text-[#d2b48c]"></i>
                                 <span>Chat with the Outlaws</span>
                             </h3>
-                            <p class="text-xs text-[#d2b48c]">Type @ruby or @jax to speak to one of them directly</p>
+                            <p class="text-xs text-[#d2b48c]">Type @ruby or @jax to speak to one of them directly • Flirty words boost their bond</p>
                         </div>
                         <div class="text-xs px-3 py-1 bg-[#2c2118] border border-[#5C4033] rounded-full">In-Character AI (lite)</div>
                     </div>
@@ -416,7 +416,7 @@
     </div>
 
     <footer class="text-center py-6 text-xs text-[#8B7355]">
-        Made with ♡ for you • grok-voxel-heart-club • Future: Canvas voxel town coming soon
+        Made with ♡ for you • grok-voxel-heart-club v0.9 • Auto-saves your outlaw progress locally • Future: Canvas voxel town & saloon card games
     </footer>
 
     <script>
@@ -432,6 +432,33 @@
             relationship: 65,
             lastEvent: null
         };
+
+        const SAVE_KEY = 'grokVoxelHeartClub_v0.9';
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(SAVE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.ruby) state.ruby = { ...state.ruby, ...parsed.ruby };
+                    if (parsed.jax) state.jax = { ...state.jax, ...parsed.jax };
+                    if (typeof parsed.relationship === 'number') state.relationship = parsed.relationship;
+                    console.log('%c[Heart & Club] Loaded saved outlaw progress ♡♣', 'color:#f87171');
+                }
+            } catch (e) {
+                console.warn('Could not load save', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(SAVE_KEY, JSON.stringify({
+                    ruby: state.ruby,
+                    jax: state.jax,
+                    relationship: state.relationship
+                }));
+            } catch (e) {}
+        }
 
         let gridCells = [];
 
@@ -469,6 +496,7 @@
                     state.jax.gold += 40; 
                     updateUI(); 
                     appendEvent("Both outlaws gained gold!");
+                    saveState();
                 }
             },
             {
@@ -478,10 +506,11 @@
                     state.jax.mood = Math.min(100, state.jax.mood + 12);
                     updateUI();
                     appendEvent("Moods improved from the rain.");
+                    saveState();
                 }
             },
             {
-                text: "🃏 The local card sharp eyes you two. "Care for a friendly game?" he drawls.",
+                text: "🃏 The local card sharp eyes you two. \"Care for a friendly game?\" he drawls.",
                 effect: () => { 
                     if (Math.random() > 0.45) {
                         state.ruby.gold += 90;
@@ -493,6 +522,7 @@
                         appendChatMessage("Ruby", "Well... we can't win 'em all, darling.", "ruby");
                     }
                     updateUI();
+                    saveState();
                 }
             },
             {
@@ -501,6 +531,7 @@
                     state.relationship = Math.max(30, state.relationship - 8);
                     updateUI();
                     appendEvent("The duo's bond feels tested by the wild night.");
+                    saveState();
                 }
             },
             {
@@ -510,6 +541,7 @@
                     state.ruby.mood = Math.min(100, state.ruby.mood + 10);
                     updateUI();
                     appendChatMessage("Ruby", "I wished for more nights like this... with you.", "ruby");
+                    saveState();
                 }
             },
             {
@@ -519,6 +551,7 @@
                     state.jax.gold += 95;
                     state.relationship += 12;
                     updateUI();
+                    saveState();
                 }
             }
         ];
@@ -611,18 +644,22 @@
                 }
             }
             
-            // Place initial tokens
+            // Place initial (or saved) tokens
             setTimeout(() => {
                 const rubyToken = createToken('ruby');
                 const jaxToken = createToken('jax');
                 
-                // Place Ruby at (1,2)
-                const rubyCell = gridCells[1 * 8 + 2];
+                // Use saved positions or defaults
+                let rubyRow = Math.max(0, Math.min(7, state.ruby.row || 1));
+                let rubyCol = Math.max(0, Math.min(7, state.ruby.col || 2));
+                let jaxRow = Math.max(0, Math.min(7, state.jax.row || 4));
+                let jaxCol = Math.max(0, Math.min(7, state.jax.col || 5));
+                
+                const rubyCell = gridCells[rubyRow * 8 + rubyCol];
                 rubyCell.appendChild(rubyToken);
                 rubyCell.classList.add('occupied');
                 
-                // Place Jax at (4,5)
-                const jaxCell = gridCells[4 * 8 + 5];
+                const jaxCell = gridCells[jaxRow * 8 + jaxCol];
                 jaxCell.appendChild(jaxToken);
                 jaxCell.classList.add('occupied');
                 
@@ -688,6 +725,8 @@
             state[char].row = newRow;
             state[char].col = newCol;
             
+            saveState();
+            
             // Fun interaction if moved to Saloon
             if (newRow === 0 && newCol === 3) {
                 setTimeout(() => {
@@ -704,6 +743,30 @@
                     appendChatMessage(char === 'ruby' ? 'Ruby' : 'Jax', responses[Math.floor(Math.random() * responses.length)], char);
                 }, 650);
             }
+            
+            // Check if close to the other outlaw for special moment
+            checkProximity();
+        }
+
+        function checkProximity() {
+            const r1 = state.ruby.row, c1 = state.ruby.col;
+            const r2 = state.jax.row, c2 = state.jax.col;
+            const dist = Math.abs(r1 - r2) + Math.abs(c1 - c2);
+            if (dist <= 1 && dist > 0 && Math.random() < 0.45) {
+                const specialMoments = [
+                    "Ruby catches Jax's eye across the dust... a quiet smile under the mask.",
+                    "Jax leans closer: 'Heart and Club side by side again. Feels right, don't it?'",
+                    "The two outlaws share a look that says more than any bounty poster ever could.",
+                    "Ruby brushes close. 'You keep me sharp, outlaw. Don't ever stop.'"
+                ];
+                const msg = specialMoments[Math.floor(Math.random() * specialMoments.length)];
+                setTimeout(() => {
+                    appendChatMessage('Ruby', msg, 'ruby');
+                    state.relationship = Math.min(100, state.relationship + 4);
+                    updateUI();
+                    saveState();
+                }, 550);
+            }
         }
 
         function upgradeArmor(char) {
@@ -717,6 +780,7 @@
             }
             
             updateUI();
+            saveState();
             
             // Visual feedback
             const token = document.getElementById(`token-${char}`);
@@ -750,6 +814,7 @@
             // Small mood boost from attention
             state[char].mood = Math.min(100, state[char].mood + 6);
             updateUI();
+            saveState();
         }
 
         function showTumbleweed() {
@@ -770,6 +835,7 @@
             const event = events[Math.floor(Math.random() * events.length)];
             appendEvent(event.text);
             event.effect();
+            saveState();
             
             // Occasionally both comment
             if (Math.random() < 0.35) {
@@ -817,6 +883,7 @@
             if (type !== 'user' && Math.random() < 0.3) {
                 state.relationship = Math.min(100, state.relationship + 3);
                 updateUI();
+                saveState();
             }
         }
 
@@ -854,6 +921,7 @@
                 if (lower.includes('love') || lower.includes('beautiful') || lower.includes('darling') || lower.includes('sweet') || lower.includes('♡')) {
                     state.relationship = Math.min(100, state.relationship + 8);
                     updateUI();
+                    saveState();
                 }
             }, 520);
         }
@@ -862,7 +930,7 @@
             const log = document.getElementById('event-log');
             const starter = document.createElement('div');
             starter.className = 'text-[#8B7355] text-xs px-2';
-            starter.innerHTML = `The sun is setting over the voxel desert. Ruby &amp; Jax are ready for trouble.`;
+            starter.innerHTML = `The sun is setting over the voxel desert. Ruby & Jax remember you...`;
             log.appendChild(starter);
         }
 
@@ -895,6 +963,7 @@
         // Boot everything
         function bootGame() {
             initTailwind();
+            loadState();
             createGrid();
             initEventLog();
             initChat();

@@ -214,7 +214,7 @@
             <div class="flex items-center gap-x-3 text-sm">
                 <div class="px-4 py-1.5 bg-[#3a2f1f] border border-[#5C4033] rounded-full flex items-center gap-x-2">
                     <i class="fa-solid fa-globe text-[#d2b48c]"></i>
-                    <span class="font-mono text-xs">v0.91 — Hotfix: Grid & Tokens Fixed ♡</span>
+                    <span class="font-mono text-xs">v0.92 — Step 1: Saloon Detection ♠️</span>
                 </div>
                 <div onclick="window.location.reload()" class="cursor-pointer px-3 py-1.5 hover:bg-[#3a2f1f] border border-[#5C4033] rounded-full text-xs flex items-center gap-x-1.5">
                     <i class="fa-solid fa-sync"></i>
@@ -416,7 +416,7 @@
     </div>
 
     <footer class="text-center py-6 text-xs text-[#8B7355]">
-        Made with ♡ for you • grok-voxel-heart-club v0.91 • Auto-saves your outlaw progress locally • Future: Canvas voxel town & saloon card games
+        Made with ♡ for you • grok-voxel-heart-club v0.92 • Step 1 of Saloon Card Game: Detecting when both outlaws arrive ♠️
     </footer>
 
     <script>
@@ -433,7 +433,7 @@
             lastEvent: null
         };
 
-        const SAVE_KEY = 'grokVoxelHeartClub_v0.91';
+        const SAVE_KEY = 'grokVoxelHeartClub_v0.92';
 
         function loadState() {
             try {
@@ -458,6 +458,14 @@
                     relationship: state.relationship
                 }));
             } catch (e) {}
+        }
+
+        // NEW Step 1: Helper to check if both characters are at the Saloon (row 0, col 3)
+        function areBothAtSaloon() {
+            return (
+                state.ruby.row === 0 && state.ruby.col === 3 &&
+                state.jax.row === 0 && state.jax.col === 3
+            );
         }
 
         let gridCells = [];
@@ -746,6 +754,13 @@
             
             // Check if close to the other outlaw for special moment
             checkProximity();
+
+            // NEW Step 1 test: If both are now at the Saloon, show a message
+            if (areBothAtSaloon()) {
+                setTimeout(() => {
+                    appendEvent("♠️ Both Ruby and Jax have arrived at the Saloon... the cards are calling.");
+                }, 450);
+            }
         }
 
         function checkProximity() {
